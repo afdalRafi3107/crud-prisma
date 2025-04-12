@@ -12,10 +12,17 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-
-model Product{
+model Category{
   id Int @id @default(autoincrement())
+  nameCategory String
+  produk Produk[]
+}
+
+model Produk{
+  id  Int @id @default(autoincrement())
   name String
-  cost String
-  createAt DateTime @default(now())
+  price Int
+  stock Int
+  categoryId Int
+  category Category @relation(fields: [categoryId], references: [id])
 }
