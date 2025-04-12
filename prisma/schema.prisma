@@ -24,5 +24,14 @@ model Produk{
   price Int
   stock Int
   categoryId Int
+  history History[]
   category Category @relation(fields: [categoryId], references: [id])
+}
+
+model History{
+  id  Int @id @default(autoincrement())
+  produkId Int
+  stock Int
+  produk Produk @relation(fields: [produkId], references: [id])
+  updateAt DateTime @default(now())
 }

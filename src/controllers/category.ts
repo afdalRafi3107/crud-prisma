@@ -1,5 +1,6 @@
 import { Response, Request } from "express";
 import { prisma } from "../prisma/client";
+import { count } from "console";
 
 
 //get all category
@@ -75,5 +76,32 @@ export const deleteCategory = async  (req:Request, res:Response)=>{
       res.json("berhasil menghapus kategori")  
     } catch (error) {
         res.status(500).json({ error: "Failed to delete Categori" });
+    }
+}
+
+export const detailCategory = async  (req:Request, res:Response)=>{
+    const id = Number(req.params.id);
+    try {
+        const detailCategory = await prisma.category.findMany({
+            where:{id:id},
+            include:{
+                produk:{
+                    select:{
+                        name:true,
+                        price:true,
+                        stock:true,
+                    }
+    
+                },
+                _count:{
+                    select:{
+                        produk:true,
+                    }
+                }
+            }
+        })
+        res.json(detailCategory)
+    } catch (error) {
+        res.status(500).json({ error: "Failed to get detail Categori" });
     }
 }

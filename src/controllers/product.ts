@@ -15,14 +15,21 @@ export const getProduct = async (req: Request, res: Response) => {
     order,
     minPrice,
     maxPrice,
+    minStock=0,
+    maxStock=300,
     limit = 10,
     offset = 0,
+    name,
   } = req.query;
   console.log(req.query);
   
 
   const filter: any = {};
+  if (name) {
+    filter.name = { contains: String(name), mode: 'insensitive' };
+  }
 
+  //filter price
   if (minPrice) filter.price = { gte: parseFloat(minPrice as string) };
   if (maxPrice)
     filter.price = {
@@ -30,29 +37,56 @@ export const getProduct = async (req: Request, res: Response) => {
       lte: parseFloat(maxPrice as string),
     };
 
+  //filter stock
+  if (minStock) filter.stock = { gte: parseFloat(minStock as string) };
+  if (maxStock)
+    filter.stock = {
+      ...(filter.stock || {}),
+      lte: parseFloat(maxStock as string),
+    };
+
   
   console.log(filter);
 
   try {
-    const produk = await prisma.produk.findMany({
-      where: filter,
-      orderBy: {
-        [sortBy as string]: order as "asc" | "desc",
-      },
-      take: Number(limit as string) ,
-      skip: Number(offset),
-      include:{
-        category:{
-          select:{
-            nameCategory:true
-          }
+if(name){
+  const produk = await prisma.produk.findMany({
+    where: filter,
+    orderBy: {
+      [sortBy as string]: order as "asc" | "desc",
+    },
+    take: Number(limit as string) ,
+    skip: Number(offset),
+    include:{
+      history:{
+        select:{
+          stock:true,
         }
       }
-    })
+    }
+  })
+  const total = await prisma.produk.count({ where: filter });
+  res.json({ data: produk, total });
+}else{
+  const produk = await prisma.produk.findMany({
+    where: filter,
+    orderBy: {
+      [sortBy as string]: order as "asc" | "desc",
+    },
+    take: Number(limit as string) ,
+    skip: Number(offset),
+    include:{
+      history:{
+        select:{
+          stock:true,
+        }
+      }
+    }
+  })
+  const total = await prisma.produk.count({ where: filter });
+  res.json({ data: produk, total });
+}
 
-    const total = await prisma.produk.count({ where: filter });
-
-    res.json({ data: produk, total });
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch products" });
   }
@@ -136,10 +170,34 @@ try {
       stock: {increment:quantity},
     }
   })
+  const addToHistory = await prisma.history.create({
+    data:{
+      produkId:productId,
+      stock:quantity,
+    }
+  })
   
   console.log(updateProduk);
   res.json("Stock berhasil di-update")
 } catch (error) {
   res.status(500).json("Failed to update stock products")
 }
+}
+
+export const createProduk = async (req:Request, res:Response)=>{
+  const {name, price, stock, categoryId} =  req.body
+
+  try {
+    const createProduk = await prisma.produk.create({
+      data:{
+        name:name,
+        price:price,
+        stock:stock,
+        categoryId:categoryId
+      }
+    })
+    res.json("Produk baru berhasil di buat")
+  } catch (error) {
+    res.status(500).json("Failed to update create products")
+  }
 }
